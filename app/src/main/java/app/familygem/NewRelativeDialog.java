@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.RadioButton;
 import android.widget.Spinner;
+import android.widget.SpinnerAdapter;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
@@ -221,12 +222,22 @@ public class NewRelativeDialog extends DialogFragment {
         if (!newPerson) {
             addOption(new FamilyItem(getContext(), true));
         }
-        ArrayAdapter<FamilyItem> adapter = (ArrayAdapter)spinner.getAdapter();
-        adapter.clear();
-        adapter.addAll(options);
-        ((View)spinner.getParent()).setVisibility(View.VISIBLE);
-        spinner.setSelection(select);
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+        SpinnerAdapter spinnerAdapter = spinner.getAdapter();
+        ArrayAdapter<FamilyItem> adapter = null;
+
+        if (spinnerAdapter instanceof ArrayAdapter) {
+            @SuppressWarnings("unchecked")
+            ArrayAdapter<FamilyItem> safeAdapter = (ArrayAdapter<FamilyItem>) spinnerAdapter;
+            adapter = safeAdapter;
+        }
+
+        if (adapter != null) {
+            adapter.clear();
+            adapter.addAll(options);
+            ((View)spinner.getParent()).setVisibility(View.VISIBLE);
+            spinner.setSelection(select);
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+        }
     }
 
     private void addOption(FamilyItem item) {

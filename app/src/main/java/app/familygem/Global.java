@@ -6,7 +6,6 @@ import android.os.Build;
 import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
-import androidx.multidex.MultiDexApplication;
 
 import com.google.gson.Gson;
 
@@ -18,10 +17,11 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Global extends MultiDexApplication {
+public class Global extends Application {
 
     private Thread.UncaughtExceptionHandler defaultExceptionHandler;
     public static Gedcom gc;
+    @SuppressWarnings("StaticFieldLeak")
     public static Context context;
     public static Application application;
     public static Settings settings;
@@ -93,14 +93,17 @@ public class Global extends MultiDexApplication {
             settings = new Settings();
             settings.init();
             // Restores possibly lost trees
-            for (File file : context.getFilesDir().listFiles()) {
-                String name = file.getName();
-                if (file.isFile() && name.endsWith(".json")) {
-                    try {
-                        int treeId = Integer.parseInt(name.substring(0, name.lastIndexOf(".json")));
-                        settings.trees.add(new Settings.Tree(treeId, String.valueOf(treeId),
-                                0, 0, null, null, null, 0));
-                    } catch (Exception ignored) {
+            File[] files = context.getFilesDir().listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    String name = file.getName();
+                    if (file.isFile() && name.endsWith(".json")) {
+                        try {
+                            int treeId = Integer.parseInt(name.substring(0, name.lastIndexOf(".json")));
+                            settings.trees.add(new Settings.Tree(treeId, String.valueOf(treeId),
+                                    0, 0, null, null, null, 0));
+                        } catch (Exception ignored) {
+                        }
                     }
                 }
             }
