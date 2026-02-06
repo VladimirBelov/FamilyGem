@@ -13,7 +13,6 @@ import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
-import android.webkit.URLUtil
 import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -40,7 +39,6 @@ import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
-import com.bumptech.glide.signature.ObjectKey
 import com.github.panpf.zoomimage.GlideZoomImageView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.textfield.TextInputLayout
@@ -82,51 +80,177 @@ class FileActivity : AppCompatActivity() {
         wheel.visibility = View.VISIBLE
         val media = Global.editedMedia
         fileUri = FileUri(this, media)
-        val resource: Any = if (fileUri.exists()) {
-            name = fileUri.name!!
+
+        // Use original filename from normalized GEDCOM path
+        name = fileUri.name ?: media.file?.substringAfterLast('/')?.substringAfterLast('\\') ?: "Unknown file"
+        title = name
+
+        val zoomImage = findViewById<GlideZoomImageView>(R.id.file_zoomImage)
+
+        if (fileUri.exists()) {
             when (type) {
-                Type.DOCUMENT -> FileUtil.generateIcon(this, fileUri)
-                Type.PDF -> FileUtil.previewPdf(this, fileUri).getOrElse { R.drawable.image }
-                else -> fileUri.file ?: fileUri.uri!!
+                Type.DOCUMENT -> {
+                    // For documents display an icon
+                    Glide.with(this)
+                        .load(FileUtil.generateIcon(this, fileUri))
+                        .placeholder(R.drawable.image)
+                        .error(R.drawable.image)
+                        .listener(object : RequestListener<Drawable> {
+                            override fun onResourceReady(
+                                resource: Drawable, model: Any, target: Target<Drawable>?, dataSource: DataSource, isFirstResource: Boolean
+                            ): Boolean {
+                                wheel.visibility = View.GONE
+                                return false
+                            }
+
+                            override fun onLoadFailed(
+                                e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean
+                            ): Boolean {
+                                wheel.visibility = View.GONE
+                                Toast.makeText(this@FileActivity, e?.localizedMessage, Toast.LENGTH_LONG).show()
+                                return false
+                            }
+                        })
+                        .into(zoomImage)
+                }
+                Type.PDF -> {
+                    // For PDF display preview of first page
+                    FileUtil.previewPdf(this, fileUri).fold(
+                        onSuccess = { bitmap ->
+                            Glide.with(this)
+                                .load(bitmap)
+                                .placeholder(R.drawable.image)
+                                .error(R.drawable.image)
+                                .listener(object : RequestListener<Drawable> {
+                                    override fun onResourceReady(
+                                        resource: Drawable, model: Any, target: Target<Drawable>?, dataSource: DataSource, isFirstResource: Boolean
+                                    ): Boolean {
+                                        wheel.visibility = View.GONE
+                                        return false
+                                    }
+
+                                    override fun onLoadFailed(
+                                        e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean
+                                    ): Boolean {
+                                        wheel.visibility = View.GONE
+                                        Toast.makeText(this@FileActivity, e?.localizedMessage, Toast.LENGTH_LONG).show()
+                                        return false
+                                    }
+                                })
+                                .into(zoomImage)
+                        },
+                        onFailure = {
+                            Glide.with(this)
+                                .load(R.drawable.image)
+                                .listener(object : RequestListener<Drawable> {
+                                    override fun onResourceReady(
+                                        resource: Drawable, model: Any, target: Target<Drawable>?, dataSource: DataSource, isFirstResource: Boolean
+                                    ): Boolean {
+                                        wheel.visibility = View.GONE
+                                        return false
+                                    }
+
+                                    override fun onLoadFailed(
+                                        e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean
+                                    ): Boolean {
+                                        wheel.visibility = View.GONE
+                                        Toast.makeText(this@FileActivity, e?.localizedMessage, Toast.LENGTH_LONG).show()
+                                        return false
+                                    }
+                                })
+                                .into(zoomImage)
+                        }
+                    )
+                }
+                else -> {
+                    // For images use function WITHOUT cropping (full-screen preview)
+                    FileUtil.showImage(
+                        media = media,
+                        imageView = zoomImage,
+                        progressWheel = wheel,
+                        oldFileUri = fileUri,
+                        treeId = Global.settings.openTree,
+                        cropArea = false  // ← CROPPING DISABLED for full-screen preview
+                    )
+                    // No return needed — showImage has already started loading and will hide wheel automatically
+                    return
+                }
             }
         } else if (type == Type.WEB_ANYTHING) {
-            name = URLUtil.guessFileName(media.file, null, null)
-            if (name.endsWith(".bin")) name = name.substring(0, name.lastIndexOf(".bin")) // File extension added by URLUtil
-            FileUtil.generateIcon(this, fileUri)
-        } else if (type == Type.WEB_IMAGE) {
-            name = URLUtil.guessFileName(media.file, null, null)
-            media.file
-        } else {
-            name = ""
-            R.drawable.image
-        }
-        title = name
-        val builder = Glide.with(this).load(resource).placeholder(R.drawable.image).error(R.drawable.image)
-            .listener(object : RequestListener<Drawable> {
-                override fun onResourceReady(
-                    resource: Drawable, model: Any, target: Target<Drawable>?, dataSource: DataSource, isFirstResource: Boolean
-                ): Boolean {
-                    wheel.visibility = View.GONE
-                    return false
-                }
+            if (name.endsWith(".bin")) name = name.substring(0, name.lastIndexOf(".bin"))
+            Glide.with(this)
+                .load(FileUtil.generateIcon(this, fileUri))
+                .placeholder(R.drawable.image)
+                .error(R.drawable.image)
+                .listener(object : RequestListener<Drawable> {
+                    override fun onResourceReady(
+                        resource: Drawable, model: Any, target: Target<Drawable>?, dataSource: DataSource, isFirstResource: Boolean
+                    ): Boolean {
+                        wheel.visibility = View.GONE
+                        return false
+                    }
 
-                override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>, isFirstResource: Boolean): Boolean {
-                    wheel.visibility = View.GONE
-                    Toast.makeText(this@FileActivity, e?.localizedMessage, Toast.LENGTH_LONG).show()
-                    return false
-                }
-            })
-        if (fileUri.exists()) {
-            if (Global.croppedPaths.contains(fileUri.path)) {
-                builder.signature(ObjectKey(Global.croppedPaths[fileUri.path]!!)) // Clears Glide cache
-            }
+                    override fun onLoadFailed(
+                        e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean
+                    ): Boolean {
+                        wheel.visibility = View.GONE
+                        Toast.makeText(this@FileActivity, e?.localizedMessage, Toast.LENGTH_LONG).show()
+                        return false
+                    }
+                })
+                .into(zoomImage)
+        } else if (type == Type.WEB_IMAGE) {
+            Glide.with(this)
+                .load(media.file)
+                .placeholder(R.drawable.image)
+                .error(R.drawable.image)
+                .listener(object : RequestListener<Drawable> {
+                    override fun onResourceReady(
+                        resource: Drawable, model: Any, target: Target<Drawable>?, dataSource: DataSource, isFirstResource: Boolean
+                    ): Boolean {
+                        wheel.visibility = View.GONE
+                        return false
+                    }
+
+                    override fun onLoadFailed(
+                        e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean
+                    ): Boolean {
+                        wheel.visibility = View.GONE
+                        Toast.makeText(this@FileActivity, e?.localizedMessage, Toast.LENGTH_LONG).show()
+                        return false
+                    }
+                })
+                .into(zoomImage)
+        } else {
+            Glide.with(this)
+                .load(R.drawable.image)
+                .listener(object : RequestListener<Drawable> {
+                    override fun onResourceReady(
+                        resource: Drawable, model: Any, target: Target<Drawable>?, dataSource: DataSource, isFirstResource: Boolean
+                    ): Boolean {
+                        wheel.visibility = View.GONE
+                        return false
+                    }
+
+                    override fun onLoadFailed(
+                        e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean
+                    ): Boolean {
+                        wheel.visibility = View.GONE
+                        Toast.makeText(this@FileActivity, e?.localizedMessage, Toast.LENGTH_LONG).show()
+                        return false
+                    }
+                })
+                .into(zoomImage)
         }
-        val zoomImage = findViewById<GlideZoomImageView>(R.id.file_zoomImage)
-        builder.into(zoomImage)
-        zoomImage.setOnClickListener { // Opens the file with some other app
-            val dataUri = if (fileUri.file != null) FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".provider", fileUri.file!!)
-            else if (type == Type.WEB_IMAGE || type == Type.WEB_ANYTHING) Global.editedMedia.file.toUri()
-            else fileUri.uri!!
+
+        // Click handler to open in external app
+        zoomImage.setOnClickListener {
+            val dataUri = when {
+                fileUri.file != null -> FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".provider", fileUri.file!!)
+                type == Type.WEB_IMAGE || type == Type.WEB_ANYTHING -> Global.editedMedia.file.toUri()
+                fileUri.uri != null -> fileUri.uri!!
+                else -> return@setOnClickListener
+            }
             val mimeType = contentResolver.getType(dataUri)
             val intent = Intent(Intent.ACTION_VIEW)
             intent.setDataAndType(dataUri, mimeType)

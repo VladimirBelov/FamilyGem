@@ -735,8 +735,18 @@ public abstract class DetailActivity extends BaseActivity {
         layout.addView(mediaView);
         MediaUtil.INSTANCE.furnishMedia(media, mediaView.findViewById(R.id.media_caption), mediaView.findViewById(R.id.media_number));
         LinearLayout.LayoutParams params = (LinearLayout.LayoutParams)mediaView.getLayoutParams();
+        params.width = U.dpToPx(80);
         params.height = U.dpToPx(80);
-        FileUtil.INSTANCE.showImage(media, mediaView.findViewById(R.id.media_image), 0, mediaView.findViewById(R.id.media_progress));
+        FileUtil.INSTANCE.showImage(
+                media,
+                mediaView.findViewById(R.id.media_image),
+                0,
+                mediaView.findViewById(R.id.media_progress),
+                null,
+                Global.settings.openTree,
+                true
+        );
+
         mediaView.setOnClickListener(v -> {
             Memory.setLeader(media);
             startActivity(new Intent(this, MediaActivity.class));

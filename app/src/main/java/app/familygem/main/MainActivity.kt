@@ -222,7 +222,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             val mediaList = MediaList(Global.gc)
             Global.gc.accept(mediaList)
             mediaList.getRandomPreviewMedia()?.let { media ->
-                showImage(media, imageView, Image.DARK)
+                showImage(media, imageView, Image.DARK, cropArea = false)
                 // TODO Visible and clickable only if not Type.PLACEHOLDER nor Type.DOCUMENT
                 imageView.visibility = ImageView.VISIBLE
                 imageView.setOnClickListener {

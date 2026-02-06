@@ -72,6 +72,7 @@ class MediaActivity : DetailActivity() {
         place(getString(R.string.scrapbook), "Scrapbook", false, 0) // Scrapbook that contains the Media record, not GEDCOM standard
         place(getString(R.string.slideshow), "SlideShow", false, 0) // Not GEDCOM standard
         place(getString(R.string.blob), "Blob", false, InputType.TYPE_TEXT_FLAG_MULTI_LINE)
+        place(getString(R.string.area), "Area") // Tag '_AREA' not common GEDCOM standard
         //media.fileTag; // The tag, could be 'FILE' or '_FILE'
         placeExtensions(media)
         NoteUtil.placeNotes(box, media)
@@ -86,7 +87,7 @@ class MediaActivity : DetailActivity() {
         imageLayout = LayoutInflater.from(this).inflate(R.layout.image_layout, box, false)
         box.addView(imageLayout, position)
         val imageView = imageLayout.findViewById<ImageView>(R.id.image_picture)
-        fileUri = FileUtil.showImage(media, imageView, 0, imageLayout.findViewById(R.id.image_progress))
+        fileUri = FileUtil.showImage(media, imageView, 0, imageLayout.findViewById(R.id.image_progress), cropArea = false)
         imageLayout.setOnClickListener {
             when (val fileType = imageView.getTag(R.id.tag_file_type) as Type) {
                 Type.NONE, Type.PLACEHOLDER -> { // Placeholder instead of image, the media is loading or doesn't exist

@@ -65,7 +65,7 @@ class MediaAdapter(private val mediaList: List<MediaWrapper>, private val detail
                 textView.visibility = View.GONE
                 numberView.visibility = View.GONE
             }
-            FileUtil.showImage(media, imageView, 0, view.findViewById(R.id.media_progress))
+            FileUtil.showImage(media, imageView, 0, view.findViewById(R.id.media_progress), cropArea = false)
         }
 
         override fun onClick(view: View) {

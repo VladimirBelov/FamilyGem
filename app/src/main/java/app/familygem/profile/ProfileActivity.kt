@@ -209,7 +209,7 @@ class ProfileActivity : AppCompatActivity() {
     /** Displays two images in the profile header: a regular one and the same blurred on background. */
     private fun setImages() {
         val imageView = findViewById<ImageView>(R.id.profile_image)
-        val media = FileUtil.selectMainImage(person!!, imageView)
+        val media = FileUtil.selectMainImage(person!!, imageView, cropArea = true)
         // Same image blurred on background
         val backImageView = findViewById<ImageView>(R.id.profile_background)
         if (media != null) {
@@ -222,7 +222,7 @@ class ProfileActivity : AppCompatActivity() {
                 override fun onGlobalLayout() {
                     val type = imageView.getTag(R.id.tag_file_type) as Type
                     if (type == Type.CROPPABLE || type == Type.VIDEO || type == Type.PDF || type == Type.WEB_IMAGE) {
-                        FileUtil.showImage(media, backImageView, Image.BLUR or Image.DARK)
+                        FileUtil.showImage(media, backImageView, Image.BLUR or Image.DARK, cropArea = false)
                         backImageView.visibility = View.VISIBLE
                     } else backImageView.visibility = View.GONE
                     if (type != Type.NONE) {

@@ -212,7 +212,7 @@ object FileUtil {
                 val alert: Dialog = AlertDialog.Builder(context).setView(R.layout.crop_image_dialog)
                     .setPositiveButton(R.string.yes) { _, _ -> cropImage(context, mediaFile, null) }
                     .setNeutralButton(R.string.no, null).show()
-                showImage(media, alert.findViewById(R.id.crop_image))
+                showImage(media, alert.findViewById(R.id.crop_image), cropArea = false)
             }
             return true
         }
@@ -245,14 +245,14 @@ object FileUtil {
     @JvmOverloads
     fun selectMainImage(
         person: Person, imageView: ImageView, options: Int = 0,
-        gedcom: Gedcom = Global.gc, treeId: Int = Global.settings.openTree, show: Boolean = true
+        gedcom: Gedcom = Global.gc, treeId: Int = Global.settings.openTree, show: Boolean = true, cropArea: Boolean = true
     ): Media? {
         val mediaList = MediaList(gedcom)
         person.accept(mediaList)
         // Looks for the "primary" media, or the first one
         val media = mediaList.list.firstOrNull { it.primary != null && it.primary == "Y" } ?: mediaList.list.firstOrNull()
         if (media != null) {
-            if (show) showImage(media, imageView, options, null, null, treeId)
+            if (show) showImage(media, imageView, options, null, null, treeId, cropArea = cropArea)
             imageView.visibility = View.VISIBLE
         } else {
             imageView.visibility = View.GONE
@@ -268,14 +268,19 @@ object FileUtil {
     @JvmOverloads
     fun showImage(
         media: Media, imageView: ImageView, options: Int = 0, progressWheel: ProgressBar? = null,
-        oldFileUri: FileUri? = null, treeId: Int = Global.settings.openTree
+        oldFileUri: FileUri? = null, treeId: Int = Global.settings.openTree,
+        cropArea: Boolean = true
     ): FileUri { // TODO Make it return Result<FileUri>
+
         fun applyOptions(builder: RequestBuilder<Drawable>) {
             if (options and Image.DARK != 0) {
                 imageView.setColorFilter(ContextCompat.getColor(imageView.context, R.color.primary_grayed), PorterDuff.Mode.MULTIPLY)
             }
             if (options and Image.BLUR != 0) {
                 builder.override(100, 100).apply(RequestOptions.bitmapTransform(BlurTransformation(4)))
+            }
+            if (cropArea && media.area != null) {
+                builder.transform(AreaTransformation(media))
             }
         }
 

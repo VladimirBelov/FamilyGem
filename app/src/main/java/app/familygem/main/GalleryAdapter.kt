@@ -57,8 +57,8 @@ class GalleryAdapter(private val mediaList: List<MediaWrapper>) : RecyclerView.A
             val activity = view.context as AppCompatActivity
             activity.supportFragmentManager.findFragmentById(R.id.main_fragment)!!.registerForContextMenu(view)
             if (selectedMedia[position].fileUri == null)
-                selectedMedia[position].fileUri = FileUtil.showImage(media, imageView, 0, view.findViewById(R.id.media_progress), null)
-            else FileUtil.showImage(media, imageView, 0, view.findViewById(R.id.media_progress), selectedMedia[position].fileUri)
+                selectedMedia[position].fileUri = FileUtil.showImage(media, imageView, 0, view.findViewById(R.id.media_progress), null, Global.settings.openTree, false)
+            else FileUtil.showImage(media, imageView, 0, view.findViewById(R.id.media_progress), selectedMedia[position].fileUri, Global.settings.openTree, false)
         }
 
         override fun onClick(view: View) {
