@@ -26,6 +26,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.lifecycleScope
 import app.familygem.BuildConfig
@@ -534,12 +535,15 @@ object FileUtil {
     }
 
     /**
-     * Scales bitmap to fit within a square of maxSize pixels, preserving aspect ratio.
-     * Adds transparent padding if needed to make it square.
+     * Scales bitmap to fit within maxSize x maxSize, preserving aspect ratio.
+     * Returns a bitmap that is at most maxSize pixels in either dimension.
      */
     fun scaleBitmapPreservingAspectRatio(bitmap: Bitmap, maxSize: Int): Bitmap {
         val width = bitmap.width
         val height = bitmap.height
+
+        // If already smaller than maxSize, return as is
+        if (width <= maxSize && height <= maxSize) return bitmap
 
         // Calculate scale factor to fit within maxSize x maxSize
         val scaleFactor = minOf(maxSize.toFloat() / width, maxSize.toFloat() / height)
@@ -547,15 +551,7 @@ object FileUtil {
         val scaledWidth = (width * scaleFactor).toInt()
         val scaledHeight = (height * scaleFactor).toInt()
 
-        // Create square bitmap with transparent background
-        val result = createBitmap(maxSize, maxSize)
-        val canvas = Canvas(result)
-
-        // Draw scaled bitmap centered
-        val left = (maxSize - scaledWidth) / 2f
-        val top = (maxSize - scaledHeight) / 2f
-        canvas.drawBitmap(bitmap, left, top, null)
-
-        return result
+        // Return scaled bitmap directly (not square)
+        return bitmap.scale(scaledWidth, scaledHeight)
     }
 }
