@@ -1,6 +1,8 @@
 
 package app.familygem;
 
+import android.graphics.Bitmap;
+
 import androidx.annotation.NonNull;
 
 import com.google.gson.Gson;
@@ -264,13 +266,15 @@ public class Settings {
         String name; // 'John Doe III'
         long date; // Date of next birthday in Unix time
         int age; // Turned years
+        Bitmap photo;
 
-        public Birthday(String id, String given, String name, long date, int age) {
+        public Birthday(String id, String given, String name, long date, int age, Bitmap photo) {
             this.id = id;
             this.given = given;
             this.name = name;
             this.date = date;
             this.age = age;
+            this.photo = photo;
         }
 
         @NonNull

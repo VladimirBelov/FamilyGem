@@ -47,6 +47,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.RequestBuilder
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPoolAdapter
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
@@ -435,4 +436,97 @@ object FileUtil {
         }
         fileOrDirectory.delete()
     }
+
+    /**
+     * Gets the main image of a person as a Bitmap.
+     * @param person The person for whom to get the photo
+     * @param gedcom GEDCOM tree (default Global.gc)
+     * @param treeId Tree ID (default Global.settings.openTree)
+     * @param cropArea Whether to crop the image according to media.area coordinates (default true)
+     * @return Bitmap of the image or null if image not found or cannot be loaded
+     */
+    @JvmOverloads
+    fun getMainImage(
+        person: Person,
+        gedcom: Gedcom = Global.gc,
+        treeId: Int = Global.settings.openTree,
+        cropArea: Boolean = true
+    ): Bitmap? {
+        val mediaList = MediaList(gedcom)
+        person.accept(mediaList)
+        val media = mediaList.list.firstOrNull { it.primary != null && it.primary == "Y" }
+            ?: mediaList.list.firstOrNull()
+            ?: return null
+
+        return getBitmapFromMedia(media, treeId, cropArea)
+    }
+
+    /**
+     * Loads Bitmap from a Media object.
+     */
+    private fun getBitmapFromMedia(media: Media, treeId: Int, cropArea: Boolean): Bitmap? {
+        val context = Global.context ?: return null
+        val fileUri = FileUri(context, media, treeId)
+
+        return try {
+            val bitmap = when {
+                fileUri.exists() -> {
+                    if (fileUri.extension == "pdf") {
+                        previewPdf(context, fileUri).getOrNull()
+                    } else {
+                        fileUri.file?.let { file ->
+                            android.graphics.BitmapFactory.decodeFile(file.absolutePath)
+                        } ?: fileUri.uri?.let { uri ->
+                            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                                android.graphics.BitmapFactory.decodeStream(inputStream)
+                            }
+                        }
+                    }
+                }
+                !media.file.isNullOrBlank() -> {
+                    loadBitmapFromUrl(media.file)
+                }
+                else -> null
+            }
+
+            // Применяем трансформацию AreaTransformation, если нужно и есть координаты
+            if (bitmap != null && cropArea && !media.area.isNullOrBlank()) {
+                AreaTransformation(media).transform(
+                    BitmapPoolAdapter(),
+                    bitmap,
+                    bitmap.width,
+                    bitmap.height
+                )
+            } else {
+                bitmap
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Loads Bitmap from URL.
+     */
+    private fun loadBitmapFromUrl(urlString: String): Bitmap? {
+        return try {
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.connectTimeout = 5000
+            connection.readTimeout = 5000
+            connection.doInput = true
+            connection.connect()
+
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                connection.inputStream.use { inputStream ->
+                    android.graphics.BitmapFactory.decodeStream(inputStream)
+                }
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
 }

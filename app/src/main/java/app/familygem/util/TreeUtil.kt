@@ -22,6 +22,8 @@ import app.familygem.U
 import app.familygem.constant.Extra
 import app.familygem.constant.Json
 import app.familygem.share.CompareActivity
+import app.familygem.util.TreeUtil.downloadSharedTree
+import app.familygem.util.TreeUtil.unzipTree
 import app.familygem.util.Util.caseString
 import app.familygem.util.Util.string
 import app.familygem.visitor.MediaList
@@ -526,7 +528,7 @@ object TreeUtil {
             }
             val inputStream = zipFile?.inputStream() ?: context.contentResolver.openInputStream(zipUri!!)
             val uri = zipUri ?: Uri.fromFile(zipFile)
-            val fileSize = context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length }?.toLong() ?: 0
+            val fileSize = context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length } ?: 0
             val result = unzipBackupFile(inputStream!!, context, treeId, mediaDir!!, progress!!, fileSize)
             // PartialSuccessException is thrown after creating the tree entry
             if (result.isFailure && result.exceptionOrNull() !is PartialSuccessException) throw result.exceptionOrNull()!!
@@ -555,7 +557,7 @@ object TreeUtil {
     private suspend fun unzipBackupFile(
         inputStream: InputStream, context: Context, treeId: Int, mediaDir: File, progressView: ProgressView, fileSize: Long
     ): Result<Boolean> {
-        var settingsOk = false;
+        var settingsOk = false
         var treeOk = false
         var mediaCount = 0
         return try {

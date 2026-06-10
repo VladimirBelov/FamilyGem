@@ -4,6 +4,9 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.os.Parcelable;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -36,6 +39,21 @@ public class NotifyReceiver extends BroadcastReceiver {
                     .setAutoCancel(true)
                     .setCategory(NotificationCompat.CATEGORY_EVENT)
                     .setSmallIcon(R.drawable.cherokee_tree);
+
+            if (intent.hasExtra(Extra.PERSON_PHOTO)) {
+                Parcelable parcelable = intent.getParcelableExtra(Extra.PERSON_PHOTO);
+                Bitmap bitmap = null;
+
+                if (parcelable instanceof Bitmap) {
+                    bitmap = (Bitmap) parcelable;
+                } else if (parcelable instanceof BitmapDrawable) {
+                    bitmap = ((BitmapDrawable) parcelable).getBitmap();
+                }
+
+                if (bitmap != null) {
+                    builder.setLargeIcon(bitmap);
+                }
+            }
 
             NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
             notificationManager.notify(intent.getIntExtra(Extra.ID, 1), builder.build());

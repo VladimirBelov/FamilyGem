@@ -6,6 +6,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Build;
 
 import androidx.work.WorkManager;
@@ -23,6 +24,7 @@ import java.util.Date;
 
 import app.familygem.constant.Extra;
 import app.familygem.constant.Format;
+import app.familygem.util.FileUtil;
 
 /**
  * Manager of birthday notifications.
@@ -101,6 +103,7 @@ public class Notifier {
      * Eventually saves settings.
      */
     void findBirthdays(Gedcom gedcom, Settings.Tree tree) {
+        if (tree == null) return;
         if (tree.birthdays == null)
             tree.birthdays = new ArrayList<>();
         else
@@ -114,8 +117,21 @@ public class Notifier {
                 if (nextBirthday.isBefore(now)) nextBirthday = nextBirthday.plusYears(1);
                 int years = Years.yearsBetween(birthDay, nextBirthday).getYears();
                 if (years >= 0 && years <= tree.settings.lifeSpan) {
-                    tree.birthdays.add(new Settings.Birthday(person.getId(), U.givenName(person),
-                            U.properName(person), nextBirthday.toDate().getTime(), years));
+                    // Contact photo
+                    Bitmap photo = FileUtil.INSTANCE.getMainImage(person);
+                    //Bitmap photo = FileUtil.INSTANCE.drawableToBitmap(ContextCompat.getDrawable(context, R.drawable.menu_persona));
+                    Bitmap scaled = null;
+                    if (photo != null) {
+                        scaled = Bitmap.createScaledBitmap(photo, 192, 192, true);
+                        photo.recycle();
+                    }
+                    tree.birthdays.add(new Settings.Birthday(
+                            person.getId(),
+                            U.givenName(person),
+                            U.properName(person),
+                            nextBirthday.toDate().getTime(),
+                            years,
+                            scaled));
                 }
             }
         }
@@ -143,7 +159,7 @@ public class Notifier {
      * Generates an alarm from each birthday of the provided tree.
      */
     void createAlarms(Context context, Settings.Tree tree) {
-        if (tree.birthdays == null) return;
+        if (tree == null || tree.birthdays == null) return;
         // Sorts birthdays by date
         Collections.sort(tree.birthdays, (birthday1, birthday2) -> {
             if (birthday1.date == birthday2.date) return 0;
@@ -160,6 +176,11 @@ public class Notifier {
                         .putExtra(Extra.TEXT, context.getString(R.string.turns_years_old, birthday.given, birthday.age))
                         .putExtra(Extra.TREE_ID, tree.id)
                         .putExtra(Extra.PERSON_ID, birthday.id);
+
+                if (birthday.photo != null) {
+                    Bitmap scaled = Bitmap.createScaledBitmap(birthday.photo, 192, 192, true);
+                    intent.putExtra(Extra.PERSON_PHOTO, scaled);
+                }
                 PendingIntent pendingIntent = PendingIntent.getBroadcast(context, eventId++, intent,
                         PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_CANCEL_CURRENT);
                 try { // If exact alarms permission is not granted throws SecurityException
@@ -175,10 +196,10 @@ public class Notifier {
      * Deletes all alarms already set for a tree.
      */
     void deleteAlarms(Context context, Settings.Tree tree) {
-        if (tree.birthdays == null) return;
+        if (tree == null || tree.birthdays == null) return;
         int eventId = tree.id * FACTOR;
         AlarmManager alarmManager = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
-        for (Settings.Birthday b : tree.birthdays) {
+        for (Settings.Birthday ignored : tree.birthdays) {
             Intent intent = new Intent(context, NotifyReceiver.class);
             PendingIntent pendingIntent = PendingIntent.getBroadcast(context, eventId++, intent,
                     // Flags also need to be identical to alarm creator

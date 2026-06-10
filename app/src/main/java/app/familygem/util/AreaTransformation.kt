@@ -15,7 +15,7 @@ import java.security.MessageDigest
  */
 class AreaTransformation(private val media: Media) : BitmapTransformation() {
 
-    override fun transform(
+    public override fun transform(
         pool: BitmapPool,
         toTransform: Bitmap,
         outWidth: Int,

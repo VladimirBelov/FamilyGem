@@ -3,7 +3,7 @@ plugins {
 }
 def credentialFile = rootProject.file('credential.properties')
 def credential
-def appVersionName = '1.2.0.4area'
+def appVersionName = '1.2.0.4notify'
 
 android {
     if (credentialFile.exists()) {

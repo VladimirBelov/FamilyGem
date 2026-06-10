@@ -17,6 +17,7 @@ object Extra {
     const val NOTE_ID = "$PREFIX.noteId"
     const val PAGE = "$PREFIX.page"
     const val PERSON_ID = "$PREFIX.personId"
+    const val PERSON_PHOTO = "$PREFIX.personPhoto"
     const val POSITION = "$PREFIX.position"
     const val RELATION = "$PREFIX.relation"
     const val RELATIVE_ID = "$PREFIX.relativeId"
