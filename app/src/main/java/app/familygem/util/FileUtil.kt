@@ -377,7 +377,7 @@ object FileUtil {
                 fileUri.fileDescriptor?.use descriptor@{ descriptor ->
                     PdfRenderer(descriptor).use { renderer ->
                         renderer.openPage(0).use { page ->
-                            val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
+                            val bitmap = createBitmap(page.width, page.height)
                             // Paints bitmap on white background before rendering
                             val canvas = Canvas(bitmap)
                             canvas.drawColor(Color.WHITE)
@@ -404,7 +404,7 @@ object FileUtil {
         view.measure(0, 0) // For View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
         val size = U.dpToPx(200F)
         view.layout(0, 0, size, size)
-        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(size, size)
         val canvas = Canvas(bitmap)
         view.draw(canvas)
         return bitmap
