@@ -13,13 +13,13 @@ import androidx.work.WorkManager;
 import org.folg.gedcom.model.EventFact;
 import org.folg.gedcom.model.Gedcom;
 import org.folg.gedcom.model.Person;
+import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
 import org.joda.time.Years;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 
 import app.familygem.constant.Extra;
 import app.familygem.constant.Format;
@@ -107,20 +107,16 @@ public class Notifier {
         else
             tree.birthdays.clear();
         for (Person person : gedcom.getPeople()) {
-            Date birth = findBirth(person);
+            LocalDate birth = findBirth(person);
             if (birth != null) {
                 // Calculates the number of years that will be turned on the next birthday
-                LocalDateTime birthDay = new LocalDateTime(birth).withTime(notifyTime.getHourOfDay(), notifyTime.getMinuteOfHour(), 0, 0);
+                LocalDateTime birthDay = birth.toLocalDateTime(notifyTime);
                 LocalDateTime nextBirthday = birthDay.withYear(now.getYear());
                 if (nextBirthday.isBefore(now)) nextBirthday = nextBirthday.plusYears(1);
                 int years = Years.yearsBetween(birthDay, nextBirthday).getYears();
                 if (years >= 0 && years <= tree.settings.lifeSpan) {
-                    tree.birthdays.add(new Settings.Birthday(
-                            person.getId(),
-                            U.givenName(person),
-                            U.properName(person),
-                            nextBirthday.toDate().getTime(),
-                            years));
+                    tree.birthdays.add(new Settings.Birthday(person.getId(), U.givenName(person),
+                            U.properName(person), nextBirthday.toDate().getTime(), years));
                 }
             }
         }
@@ -128,15 +124,15 @@ public class Notifier {
     }
 
     /**
-     * Possibly finds the birth Date of a person or null.
+     * Possibly finds the birth LocalDate of a person or null.
      */
-    private Date findBirth(Person person) {
+    private LocalDate findBirth(Person person) {
         if (!U.isDead(person)) {
             for (EventFact event : person.getEventsFacts()) {
                 if (event.getTag().equals("BIRT") && event.getDate() != null) {
-                    GedcomDateConverter dater = new GedcomDateConverter(event.getDate());
-                    if (dater.isSingleKind() && dater.firstDate.isFormat(Format.D_M_Y)) {
-                        return dater.firstDate.date;
+                    DateConverter dater = new DateConverter(event.getDate());
+                    if (dater.isSingleKind() && dater.getFirstDate().getFormat() == Format.D_M_Y) {
+                        return dater.getFirstDate().getDate();
                     }
                 }
             }
@@ -185,7 +181,7 @@ public class Notifier {
         if (tree == null || tree.birthdays == null) return;
         int eventId = tree.id * FACTOR;
         AlarmManager alarmManager = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
-        for (Settings.Birthday ignored : tree.birthdays) {
+        for (Settings.Birthday b : new ArrayList<>(tree.birthdays)) { // Copies them to avoid ConcurrentModificationException
             Intent intent = new Intent(context, NotifyReceiver.class);
             PendingIntent pendingIntent = PendingIntent.getBroadcast(context, eventId++, intent,
                     // Flags also need to be identical to alarm creator
