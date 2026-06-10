@@ -490,18 +490,21 @@ object FileUtil {
                 else -> null
             }
 
-            // Применяем трансформацию AreaTransformation, если нужно и есть координаты
             if (bitmap != null && cropArea && !media.area.isNullOrBlank()) {
-                AreaTransformation(media).transform(
+                val transformed = AreaTransformation(media).transform(
                     BitmapPoolAdapter(),
                     bitmap,
                     bitmap.width,
                     bitmap.height
                 )
+                if (transformed !== bitmap) {
+                    bitmap.recycle()
+                }
+                transformed
             } else {
                 bitmap
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -525,7 +528,7 @@ object FileUtil {
             } else {
                 null
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

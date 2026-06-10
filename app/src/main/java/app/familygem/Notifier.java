@@ -6,7 +6,6 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.os.Build;
 
 import androidx.work.WorkManager;
@@ -24,7 +23,6 @@ import java.util.Date;
 
 import app.familygem.constant.Extra;
 import app.familygem.constant.Format;
-import app.familygem.util.FileUtil;
 
 /**
  * Manager of birthday notifications.
@@ -117,21 +115,12 @@ public class Notifier {
                 if (nextBirthday.isBefore(now)) nextBirthday = nextBirthday.plusYears(1);
                 int years = Years.yearsBetween(birthDay, nextBirthday).getYears();
                 if (years >= 0 && years <= tree.settings.lifeSpan) {
-                    // Contact photo
-                    Bitmap photo = FileUtil.INSTANCE.getMainImage(person);
-                    Bitmap scaled = null;
-                    if (photo != null) {
-                        // Resize with preserving aspect ratio
-                        scaled = FileUtil.INSTANCE.scaleBitmapPreservingAspectRatio(photo, 192);
-                        photo.recycle();
-                    }
                     tree.birthdays.add(new Settings.Birthday(
                             person.getId(),
                             U.givenName(person),
                             U.properName(person),
                             nextBirthday.toDate().getTime(),
-                            years,
-                            scaled));
+                            years));
                 }
             }
         }
@@ -176,15 +165,11 @@ public class Notifier {
                         .putExtra(Extra.TEXT, context.getString(R.string.turns_years_old, birthday.given, birthday.age))
                         .putExtra(Extra.TREE_ID, tree.id)
                         .putExtra(Extra.PERSON_ID, birthday.id);
-
-                if (birthday.photo != null) {
-                    intent.putExtra(Extra.PERSON_PHOTO, birthday.photo);
-                }
                 PendingIntent pendingIntent = PendingIntent.getBroadcast(context, eventId++, intent,
                         PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_CANCEL_CURRENT);
                 try { // If exact alarms permission is not granted throws SecurityException
                     alarmManager.setExact(AlarmManager.RTC, birthday.date, pendingIntent);
-                } catch (SecurityException e) {
+                } catch (SecurityException se) {
                     break;
                 } catch (Exception e) {
                     break; // There is a limit of 500 alarms on some devices
