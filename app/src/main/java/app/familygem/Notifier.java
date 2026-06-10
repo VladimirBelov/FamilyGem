@@ -119,10 +119,10 @@ public class Notifier {
                 if (years >= 0 && years <= tree.settings.lifeSpan) {
                     // Contact photo
                     Bitmap photo = FileUtil.INSTANCE.getMainImage(person);
-                    //Bitmap photo = FileUtil.INSTANCE.drawableToBitmap(ContextCompat.getDrawable(context, R.drawable.menu_persona));
                     Bitmap scaled = null;
                     if (photo != null) {
-                        scaled = Bitmap.createScaledBitmap(photo, 192, 192, true);
+                        // Resize with preserving aspect ratio
+                        scaled = FileUtil.INSTANCE.scaleBitmapPreservingAspectRatio(photo, 192);
                         photo.recycle();
                     }
                     tree.birthdays.add(new Settings.Birthday(
@@ -178,13 +178,14 @@ public class Notifier {
                         .putExtra(Extra.PERSON_ID, birthday.id);
 
                 if (birthday.photo != null) {
-                    Bitmap scaled = Bitmap.createScaledBitmap(birthday.photo, 192, 192, true);
-                    intent.putExtra(Extra.PERSON_PHOTO, scaled);
+                    intent.putExtra(Extra.PERSON_PHOTO, birthday.photo);
                 }
                 PendingIntent pendingIntent = PendingIntent.getBroadcast(context, eventId++, intent,
                         PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_CANCEL_CURRENT);
                 try { // If exact alarms permission is not granted throws SecurityException
                     alarmManager.setExact(AlarmManager.RTC, birthday.date, pendingIntent);
+                } catch (SecurityException e) {
+                    break;
                 } catch (Exception e) {
                     break; // There is a limit of 500 alarms on some devices
                 }
