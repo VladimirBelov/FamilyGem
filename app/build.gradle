@@ -3,6 +3,8 @@ plugins {
 }
 def credentialFile = rootProject.file('credential.properties')
 def credential
+def appVersionName = '1.2.0.4area'
+
 android {
     if (credentialFile.exists()) {
         credential = new Properties()
@@ -23,7 +25,7 @@ android {
         minSdk = 21
         targetSdk = 36
         versionCode = 28
-        versionName = '1.2.0.4'
+        versionName = appVersionName
         resourceConfigurations += ['ar', 'bg', 'ckb', 'cs', 'da', 'de', 'en', 'eo', 'es', 'fa', 'fr', 'hr', 'hu', 'in', 'it', 'iw', 'kn',
                                    'lt', 'mr', 'nb', 'nl', 'pl', 'pt', 'ru', 'sk', 'sl', 'sr', 'sv', 'ta', 'ti', 'tr', 'uk', 'vi', 'zh']
         def passKey = ''
@@ -58,6 +60,16 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 }
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.outputs.each { output ->
+            def apkName = "FamilyGem_${appVersionName}.apk"
+            output.outputFileName.set(apkName)
+        }
+    }
+}
+
 dependencies {
     //implementation 'androidx.multidex:multidex:2.0.1'
     // commons-io versions >= 2.9.0 throws NoClassDefFoundError on API <= 25
